@@ -7,26 +7,26 @@ const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname))); // Serve static files from root directory
+app.use(express.static(path.join(__dirname))); // Serve static files from root
 
 const PORT = process.env.PORT || 3000;
 const SPOONACULAR_API_KEY = process.env.SPOONACULAR_API_KEY || 'YOUR_API_KEY_HERE';
 
-// Helper function to transform Spoonacular recipe data
 function transformRecipe(recipe) {
+  // Transform Spoonacular recipe data to simplified format
   const ingredients = recipe.extendedIngredients 
-    ? recipe.extendedIngredients.map(i => i.original)
+    ? recipe.extendedIngredients.map(ing => ing.original)
     : [];
   let instructions = [];
-  if (recipe.analyzedInstructions && recipe.analyzedInstructions.length > 0) {
-    instructions = recipe.analyzedInstructions[0].steps.map(s => s.step);
+  if (recipe.analyzedInstructions && recipe.analyzedInstructions.length) {
+    instructions = recipe.analyzedInstructions[0].steps.map(step => step.step);
   } else if (recipe.instructions) {
-    instructions = recipe.instructions.split(/[\r\n]+/).filter(i => i.trim());
+    instructions = recipe.instructions.split(/[\r\n]+/).filter(Boolean);
   }
   const description = recipe.summary 
-    ? recipe.summary.replace(/<[^>]*>/g, '').substring(0, 200) + '...' 
-    : 'A delicious recipe made with your selected ingredients.';
-  
+    ? recipe.summary.replace(/<[^>]*>/g, '').slice(0, 200) + '...'
+    : 'A delicious recipe using your ingredients.';
+
   return {
     title: recipe.title || 'Delicious Recipe',
     description,
@@ -34,11 +34,11 @@ function transformRecipe(recipe) {
     instructions,
     time: recipe.readyInMinutes ? `${recipe.readyInMinutes} minutes` : '',
     dietary_labels: [
-      recipe.vegetarian ? 'Vegetarian' : null,
-      recipe.vegan ? 'Vegan' : null,
-      recipe.glutenFree ? 'Gluten-Free' : null,
-      recipe.dairyFree ? 'Dairy-Free' : null,
-      recipe.veryHealthy ? 'Healthy' : null,
+      recipe.vegetarian && 'Vegetarian',
+      recipe.vegan && 'Vegan',
+      recipe.glutenFree && 'Gluten-Free',
+      recipe.dairyFree && 'Dairy-Free',
+      recipe.veryHealthy && 'Healthy',
       ...(recipe.dishTypes || []),
       ...(recipe.cuisines || [])
     ].filter(Boolean),
@@ -47,37 +47,34 @@ function transformRecipe(recipe) {
     image: recipe.image || '',
     sourceUrl: recipe.sourceUrl || '',
     spoonacularScore: recipe.spoonacularScore || 0,
-    healthScore: recipe.healthScore || 0
+    healthScore: recipe.healthScore || 0,
   };
 }
 
-// Fallback recipe when API call fails or no recipes found
 function createFallbackRecipe(ingredients, dietaryPreference) {
   const mainIngredient = ingredients[0] || 'ingredients';
   const cuisineHint = dietaryPreference === 'indian' ? 'Indian-Style ' : '';
+  
   return {
-    title: `${cuisineHint}${mainIngredient.charAt(0).toUpperCase() + mainIngredient.slice(1)} Delight`,
-    description: `A delicious homemade ${cuisineHint.toLowerCase()} dish featuring ${ingredients.slice(0, 3).join(', ')}`,
+    title: `${cuisineHint}${mainIngredient.charAt(0).toUpperCase()}${mainIngredient.slice(1)} Delight`,
+    description: `A homemade ${cuisineHint.toLowerCase()} dish with ${ingredients.slice(0,3).join(', ')}`,
     ingredients: [
-      ...ingredients.map(ing => `1-2 portions ${ing}`),
-      "Salt and pepper to taste",
-      "2 tbsp cooking oil",
-      "Fresh herbs (optional)",
-      "Spices as needed"
+      ...ingredients.map(i => `1-2 portions ${i}`),
+      'Salt and pepper to taste', '2 tbsp cooking oil', 'Fresh herbs (optional)', 'Spices as needed'
     ],
     instructions: [
-      "Wash and prepare all ingredients",
-      `Heat oil, add ${ingredients[0]}, cook until golden`,
-      ingredients.length > 1 ? `Add ${ingredients.slice(1).join(', ')} and cook 5-7 mins` : "Continue cooking for 5-7 minutes",
-      "Season with salt, pepper, and spices",
-      dietaryPreference === 'indian' ? "Add turmeric, cumin, garam masala" : "Add herbs and spices as desired",
-      "Cook until tender and combined",
-      "Serve hot and enjoy!"
+      'Wash and prepare ingredients.',
+      `Heat oil and cook ${ingredients[0]} until golden.`,
+      ingredients.length > 1 ? `Add ${ingredients.slice(1).join(', ')} and cook 5-7 minutes.` : 'Cook 5-7 minutes.',
+      'Season with salt, pepper, and spices.',
+      dietaryPreference === 'indian' ? 'Add Indian spices like turmeric, cumin, garam masala.' : 'Add herbs and spices.',
+      'Cook until tender and combined.',
+      'Serve hot and enjoy!'
     ],
-    time: "25-30 minutes",
-    dietary_labels: dietaryPreference ? [dietaryPreference] : ["Homemade"],
-    category: "Main Course",
-    servings: "2-4",
+    time: '25-30 minutes',
+    dietary_labels: dietaryPreference ? [dietaryPreference] : ['Homemade'],
+    category: 'Main Course',
+    servings: '2-4',
     image: '',
     sourceUrl: '',
     spoonacularScore: 0,
@@ -85,35 +82,34 @@ function createFallbackRecipe(ingredients, dietaryPreference) {
   };
 }
 
-// Recipe generation endpoint
 app.post('/generate-recipe', async (req, res) => {
   try {
     const { ingredients = [], dietaryPreference = '', allergies = '' } = req.body;
 
-    if (!ingredients.length) {
+    if (ingredients.length === 0) {
       return res.status(400).json({ error: 'Please provide at least one ingredient', recipes: [] });
     }
 
     const fetch = (await import('node-fetch')).default;
+    const ingredientsStr = ingredients.join(',+');
+    const apiUrl = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${encodeURIComponent(ingredientsStr)}&number=8&ranking=2&ignorePantry=true&apiKey=${SPOONACULAR_API_KEY}`;
 
-    const ingredientsString = ingredients.join(',+');
-    const searchUrl = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${encodeURIComponent(ingredientsString)}&number=8&ranking=2&ignorePantry=true&apiKey=${SPOONACULAR_API_KEY}`;
+    const apiResponse = await fetch(apiUrl);
+    if (!apiResponse.ok) throw new Error(`API search failed: ${apiResponse.status}`);
 
-    const searchResponse = await fetch(searchUrl);
-    if (!searchResponse.ok) throw new Error(`Spoonacular search failed: ${searchResponse.status}`);
+    const recipes = await apiResponse.json();
 
-    const foundRecipes = await searchResponse.json();
-    if (!foundRecipes.length) {
+    if (!recipes.length) {
       return res.json({ recipes: [createFallbackRecipe(ingredients, dietaryPreference)], apiSource: 'Fallback', message: 'No matches found, showing fallback recipe' });
     }
 
     const detailedRecipes = await Promise.all(
-      foundRecipes.slice(0, 5).map(async recipe => {
+      recipes.slice(0, 5).map(async (recipe) => {
         try {
           const detailUrl = `https://api.spoonacular.com/recipes/${recipe.id}/information?includeNutrition=false&apiKey=${SPOONACULAR_API_KEY}`;
-          const detailResponse = await fetch(detailUrl);
-          if (!detailResponse.ok) return null;
-          const detailData = await detailResponse.json();
+          const detailResp = await fetch(detailUrl);
+          if (!detailResp.ok) return null;
+          const detailData = await detailResp.json();
           return transformRecipe(detailData);
         } catch {
           return null;
@@ -121,40 +117,39 @@ app.post('/generate-recipe', async (req, res) => {
       })
     );
 
-    let validRecipes = detailedRecipes.filter(r => r !== null);
+    let validRecipes = detailedRecipes.filter(Boolean);
 
     if (dietaryPreference) {
-      const preference = dietaryPreference.toLowerCase().replace('-', ' ');
-      validRecipes = validRecipes.filter(recipe =>
-        recipe.dietary_labels.some(label => label.toLowerCase().includes(preference))
+      const pref = dietaryPreference.toLowerCase().replace('-', ' ');
+      validRecipes = validRecipes.filter(rec =>
+        rec.dietary_labels.some(label => label.toLowerCase().includes(pref))
       );
     }
 
     if (allergies) {
-      const allergensList = allergies.split(',').map(a => a.trim().toLowerCase());
-      validRecipes = validRecipes.filter(recipe => {
-        const recipeText = (recipe.title + ' ' + recipe.ingredients.join(' ')).toLowerCase();
-        return !allergensList.some(allergen => recipeText.includes(allergen));
+      const allergList = allergies.split(',').map(a => a.trim().toLowerCase());
+      validRecipes = validRecipes.filter(r => {
+        const text = (r.title + ' ' + r.ingredients.join(' ')).toLowerCase();
+        return !allergList.some(al => text.includes(al));
       });
     }
 
-    if (!validRecipes.length) {
+    if (validRecipes.length === 0) {
       validRecipes = [createFallbackRecipe(ingredients, dietaryPreference)];
     }
 
-    res.json({ recipes: validRecipes, apiSource: 'Spoonacular', totalFound: foundRecipes.length, afterFiltering: validRecipes.length });
-  } catch (error) {
+    res.json({ recipes: validRecipes, apiSource: 'Spoonacular', totalFound: recipes.length, afterFiltering: validRecipes.length });
+  } catch (err) {
     const { ingredients = [], dietaryPreference = '' } = req.body;
     res.json({
       recipes: [createFallbackRecipe(ingredients, dietaryPreference)],
       apiSource: 'Fallback',
-      error: error.message,
+      error: err.message,
       message: 'API unavailable, showing fallback recipe'
     });
   }
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
     status: "✅ Smarty-Chef.PCS Server Running!",
@@ -164,7 +159,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Spoonacular API status endpoint
 app.get('/api-status', async (req, res) => {
   try {
     const fetch = (await import('node-fetch')).default;
@@ -175,36 +169,32 @@ app.get('/api-status', async (req, res) => {
       statusCode: response.status,
       timestamp: new Date().toISOString()
     });
-  } catch (err) {
+  } catch (error) {
     res.json({
       spoonacularAPI: "❌ Connection Failed",
-      error: err.message,
+      error: error.message,
       timestamp: new Date().toISOString()
     });
   }
 });
 
-// Serve frontend index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not found',
-    availableEndpoints: ['GET /', 'POST /generate-recipe', 'GET /health', 'GET /api-status'],
+    availableEndpoints: ['GET /', 'POST /generate-recipe', 'GET /health', 'GET /api-status']
   });
 });
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Smarty-Chef.PCS Server started on port ${PORT}`);
+  console.log(`🚀 Server started on port ${PORT}`);
   console.log(`💻 Open http://localhost:${PORT}`);
-  console.log(`🔑 API key is ${SPOONACULAR_API_KEY ? 'configured' : 'missing'}`);
+  console.log(`🔑 API key status: ${SPOONACULAR_API_KEY ? 'Configured' : 'Missing'}`);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('🔄 Server shutting down...');
   process.exit(0);

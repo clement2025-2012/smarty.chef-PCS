@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smarty-Chef.PCS - Recipe Generator</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    /* Embedded icon styling */
+    .app-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .app-icon-hero {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 3rem;
+      font-weight: bold;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      animation: float 3s ease-in-out infinite;
+    }
+    .app-icon-about {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 3.5rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow);
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="app-icon">🍳</div>
+    <span class="brand-title">Smarty-Chef.PCS</span>
+  </div>
+  <div class="nav-menu">
+    <a href="#" class="nav-link active" data-page="home">Home</a>
+    <a href="#" class="nav-link" data-page="generator">Generate</a>
+    <a href="#" class="nav-link" data-page="login">Login</a>
+    <a href="#" class="nav-link" data-page="privacy">Privacy</a>
+    <a href="#" class="nav-link" data-page="about">About</a>
+  </div>
+  <div class="mobile-menu-btn">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</nav>
+
+<div class="mobile-menu">
+  <a href="#" class="mobile-nav-link active" data-page="home">Home</a>
+  <a href="#" class="mobile-nav-link" data-page="generator">Generate</a>
+  <a href="#" class="mobile-nav-link" data-page="login">Login</a>
+  <a href="#" class="mobile-nav-link" data-page="privacy">Privacy</a>
+  <a href="#" class="mobile-nav-link" data-page="about">About</a>
+</div>
+
+<main class="main-content">
+  <section id="home-page" class="page active">
+    <div class="hero">
+      <div class="hero-icon">
+        <div class="app-icon-hero">🍳</div>
+      </div>
+      <h1>Welcome to Smarty-Chef.PCS</h1>
+      <p>Cook smarter with AI-powered recipe generation from your available ingredients!</p>
+      <div class="hero-features">
+        <div class="feature">
+          <span class="feature-icon">🥘</span>
+          <span>Smart Recipe Generation</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🥗</span>
+          <span>Dietary Preferences</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🌶️</span>
+          <span>Indian Cuisine</span>
+        </div>
+      </div>
+      <button id="startGenerateBtn" class="btn-primary">Start Cooking</button>
+    </div>
+  </section>
+
+  <section id="generator-page" class="page">
+    <div class="generator-container">
+      <h2>🍳 Recipe Generator</h2>
+      <div class="input-group">
+        <label for="ingredientSearch">Search Ingredients:</label>
+        <input id="ingredientSearch" type="search" placeholder="Search for ingredients..." />
+      </div>
+      <div id="ingredientOptions" class="ingredients-grid"></div>
+      <div class="selected-section">
+        <h3>Selected Ingredients:</h3>
+        <div id="selectedIngredients" class="selected-pills"></div>
+      </div>
+      <div class="input-group">
+        <label for="diet">Dietary Preference:</label>
+        <select id="diet">
+          <option value="">No Preference</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="vegan">Vegan</option>
+          <option value="gluten-free">Gluten-Free</option>
+          <option value="keto">Keto</option>
+          <option value="paleo">Paleo</option>
+          <option value="dairy-free">Dairy-Free</option>
+          <option value="low-carb">Low Carb</option>
+          <option value="indian">Indian Cuisine</option>
+        </select>
+      </div>
+      <div class="button-group">
+        <button id="generateBtn" class="btn-primary">🔥 Generate Recipes</button>
+        <button id="saveAllBtn" class="btn-secondary">💾 Save All Recipes</button>
+      </div>
+      <div id="recipes" class="recipes-grid"></div>
+    </div>
+  </section>
+
+  <section id="login-page" class="page">
+    <div class="form-container">
+      <h2>🔐 Login</h2>
+      <form id="loginForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <div class="input-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" name="email" required />
+        </div>
+        <div class="input-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" name="password" required />
+        </div>
+        <button type="submit" class="btn-primary">Login</button>
+      </form>
+      <p class="form-link">No account? <a href="#" id="showSignup">Sign up here</a></p>
+    </div>
+  </section>
+
+  <section id="signup-page" class="page">
+    <div class="form-container">
+      <h2>📝 Sign Up</h2>
+      <form id="signupForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <div class="input-group">
+          <label for="signupName">Full Name</label>
+          <input type="text" id="signupName" name="name" required />
+        </div>
+        <div class="input-group">
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" name="email" required />
+        </div>
+        <div class="input-group">
+          <label for="signupPassword">Password</label>
+          <input type="password" id="signupPassword" name="password" required />
+        </div>
+        <div class="input-group">
+          <label for="signupConfirmPassword">Confirm Password</label>
+          <input type="password" id="signupConfirmPassword" name="confirmPassword" required />
+        </div>
+        <button type="submit" class="btn-primary">Create Account</button>
+      </form>
+      <p class="form-link">Already have an account? <a href="#" id="showLogin">Login here</a></p>
+    </div>
+  </section>
+
+  <section id="privacy-page" class="page">
+    <div class="content-container">
+      <h2>🔒 Privacy Policy</h2>
+      <div class="privacy-content">
+        <h3>Data Collection</h3>
+        <p>Smarty-Chef.PCS collects minimal data necessary for functionality:</p>
+        <ul>
+          <li>Ingredient preferences and dietary restrictions</li>
+          <li>Saved recipes (stored locally in your browser)</li>
+          <li>Basic usage analytics to improve the service</li>
+        </ul>
+        <h3>Data Usage</h3>
+        <p>We use your data to:</p>
+        <ul>
+          <li>Generate personalized recipe recommendations</li>
+          <li>Remember your dietary preferences</li>
+          <li>Improve our recipe suggestions</li>
+        </ul>
+        <h3>Data Storage</h3>
+        <p>Your recipe data is stored locally in your browser. We do not store personal recipe data on our servers.</p>
+        <h3>Third-Party Services</h3>
+        <p>We use API Ninjas for recipe data. Please review their privacy policy for more information.</p>
+        <h3>Contact</h3>
+        <p>For privacy concerns, contact us through our social media channels below.</p>
+        <p class="policy-updated"><em>Last updated: October 1, 2025</em></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="about-page" class="page">
+    <div class="content-container">
+      <div class="about-header">
+        <div class="app-icon-about">🍳</div>
+        <h2>About Smarty-Chef.PCS</h2>
+      </div>
+
+      <div class="about-content">
+        <div class="credits-section">
+          <h3>👨‍💻 Made by Clement</h3>
+          <p>Smarty-Chef.PCS is crafted with passion by Clement, combining modern web technologies with smart recipe generation.</p>
+        </div>
+
+        <div class="features-section">
+          <h3>✨ Features</h3>
+          <ul>
+            <li>🔍 Smart ingredient selection with Indian spices</li>
+            <li>🤖 AI-powered recipe generation via API Ninjas</li>
+            <li>🥗 Dietary preference filtering</li>
+            <li>🌶️ Indian cuisine specialization</li>
+            <li>📱 Mobile-responsive design</li>
+            <li>💾 Local recipe saving</li>
+            <li>🌐 Progressive Web App (PWA) support</li>
+          </ul>
+        </div>
+
+        <div class="tech-section">
+          <h3>🛠️ Technology Stack</h3>
+          <p>Built with modern web technologies:</p>
+          <ul>
+            <li>Frontend: HTML5, CSS3, Vanilla JavaScript</li>
+            <li>Backend: Node.js, Express.js</li>
+            <li>API: API Ninjas Recipe Database</li>
+            <li>PWA: Service Worker, Web App Manifest</li>
+          </ul>
+        </div>
+
+        <div class="copyright-section">
+          <p><strong>© 2025 Clement. All rights reserved.</strong></p>
+          <p>Powered by PCS & API Ninjas</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-brand">
+      <strong>Made by Clement</strong>
+    </div>
+    <div class="social-links">
+      <a href="https://youtube.com/@clement" target="_blank" aria-label="YouTube" class="social-link">
+        <span class="social-icon">📺</span>
+        <span class="social-text">YouTube</span>
+      </a>
+      <a href="https://instagram.com/clement" target="_blank" aria-label="Instagram" class="social-link">
+        <span class="social-icon">📸</span>
+        <span class="social-text">Instagram</span>
+      </a>
+      <a href="https://facebook.com/clement" target="_blank" aria-label="Facebook" class="social-link">
+        <span class="social-icon">📘</span>
+        <span class="social-text">Facebook</span>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
